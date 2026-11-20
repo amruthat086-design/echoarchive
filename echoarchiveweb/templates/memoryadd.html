@@ -1,0 +1,100 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add a memory | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section" style="max-width:720px">
+  <h1>Add a memory</h1>
+  <p class="lede">Start with the details, as text, as an image of the text, or both. You can add more photographs and documents on the next step.</p>
+  <form method="post" action="{% url 'memoryaddhandler' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="fieldrow"><label for="cid">Community</label>
+      <select id="cid" name="cid" required>{% for c in comms %}<option value="{{ c.cid }}">{{ c.cname }}</option>{% endfor %}</select></div>
+    <div class="fieldrow"><label for="title">Title</label><input id="title" name="title" type="text" maxlength="200" required></div>
+    <div class="fieldrow"><label for="description">What do you remember?</label><textarea id="description" name="description" rows="8"></textarea>
+      <p class="help">Write it here, or add an image of the text below, or both.</p></div>
+    <div class="fieldrow"><label for="photos">Photographs of the memory (optional)</label><input id="photos" name="photos" type="file" accept="image/*" multiple>
+      <p class="help">For example, a photograph of the Onam sadya. You can choose several. JPG, PNG or TIFF, up to 15 MB each.</p></div>
+    <div class="fieldrow"><label for="photocaption">Caption for the photographs (optional)</label><input id="photocaption" name="photocaption" type="text" maxlength="255"></div>
+    <div class="fieldrow"><label for="textimage">Image of the text (optional)</label><input id="textimage" name="textimage" type="file" accept="image/*" multiple>
+      <p class="help">For example, a photograph of the written recipe or a printed page. The text is read from it and kept with the memory as searchable text. You can check and correct it on the next step.</p></div>
+    <div class="fieldrow"><label for="language">Language of the printed text</label>
+      <select id="language" name="language"><option value="eng+mal" selected>English and Malayalam</option><option value="eng">English</option><option value="mal">Malayalam</option></select></div>
+    <div class="fieldrow"><label for="catid">Category</label>
+      <select id="catid" name="catid" required><option value="">Choose a category</option>
+      {% for k in cats %}<option value="{{ k.catid }}">{{ k.catname }}{% if k.cid %} ({{ k.cname }}){% endif %}</option>{% endfor %}</select></div>
+    <div class="fieldrow"><label for="sid">Part of an existing subject</label>
+      <select id="sid" name="sid"><option value="">None</option>{% for s in subs %}<option value="{{ s.sid }}">{{ s.sname }} ({{ s.cname }})</option>{% endfor %}</select>
+      <p class="help">Optional. Choose a person, place or event this memory is about.</p></div>
+    <div class="fieldrow"><label for="mtype">Kind of memory</label>
+      <select id="mtype" name="mtype">{% for t in types %}<option value="{{ t }}">{{ t|capfirst }}</option>{% endfor %}</select></div>
+    <div class="fieldrow"><label for="approxdate">Approximate date</label><input id="approxdate" name="approxdate" type="text" maxlength="50">
+      <p class="help">Write it the way you remember it, for example: around 1950, or summer 1987.</p></div>
+    <div class="fieldrow"><label for="sortyear">Year (for the timeline)</label><input id="sortyear" name="sortyear" type="number">
+      <p class="help">A single year places this memory on the timeline. Leave blank if unknown.</p></div>
+    <div class="fieldrow"><label for="location">Name of the place</label><input id="location" name="location" type="text" maxlength="150">
+      <p class="help">Where did this happen? You can add photographs of the place on the next step.</p></div>
+    <div class="fieldrow"><label for="district">District</label><input id="district" name="district" type="text" maxlength="80"></div>
+    <div class="fieldrow"><label for="landmark">What is near the place?</label><input id="landmark" name="landmark" type="text" maxlength="150">
+      <p class="help">A landmark helps others find it, for example: opposite the old bus stand.</p></div>
+    <div class="fieldrow"><label for="people">People in this memory</label><input id="people" name="people" type="text" maxlength="255"></div>
+    <div class="fieldrow"><label for="source">How do you know this?</label>
+      <select id="source" name="source"><option>My own memory</option><option>Told by a family member</option><option>Told by someone in the community</option><option>A document or record</option><option>A photograph</option></select></div>
+    <div class="fieldrow"><label for="tags">Tags</label><input id="tags" name="tags" type="text" maxlength="255">
+      <p class="help">Separate tags with commas, for example: temple, festival, 1950s.</p></div>
+    <div class="actions"><button class="btn" type="submit">Save draft</button><a class="btn ghost" href="{% url 'dashboard' %}">Cancel</a></div>
+  </form>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

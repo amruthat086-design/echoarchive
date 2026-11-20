@@ -1,0 +1,86 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Category | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section">
+  <h1>Platform</h1>
+  <nav class="actions" style="margin:0 0 2rem;padding-bottom:1rem;border-bottom:1px solid var(--line)" aria-label="Platform">
+  <a href="{% url 'superhome' %}">Overview</a>
+  <a href="{% url 'supercommunities' %}">Communities</a>
+  <a href="{% url 'superadmins' %}">Community admins</a>
+  <a href="{% url 'supercategories' %}">Categories</a>
+  <a href="{% url 'modqueue' %}">Review queue</a>
+  <a href="{% url 'superreports' %}">Reports</a>
+  <a href="{% url 'superusers' %}">Users</a>
+  <a href="{% url 'superactivity' %}">Activity</a>
+</nav>
+  <p class="muted" style="margin-bottom:.4rem"><a href="{% url 'supercategories' %}">Categories</a></p>
+  <h2 style="font-size:1.8rem">{{ cat.catname }}</h2>
+  <p class="muted">{% if cat.cname %}Category of {{ cat.cname }}.{% else %}Platform category, available to every community.{% endif %} {{ cat.description }}</p>
+  <p>{{ rows|length }} memor{{ rows|length|pluralize:"y,ies" }}{% for s, n in counts %}{% if forloop.first %}: {% endif %}{{ n }} {{ s|lower }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Memory</th><th>Community</th><th>Added by</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for m in rows %}
+      <tr><td><a href="{% url 'memorydetail' %}?id={{ m.memid }}">{{ m.title }}</a></td><td class="muted">{{ m.cname }}</td><td class="muted">{{ m.author }}</td>
+        <td><span class="badge {{ m.status|lower }}">{{ m.status }}</span></td><td class="muted">{{ m.mdate|date:"j M Y" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No memories use this category yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,95 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Categories | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section">
+  <h1>Platform</h1>
+  <nav class="actions" style="margin:0 0 2rem;padding-bottom:1rem;border-bottom:1px solid var(--line)" aria-label="Platform">
+  <a href="{% url 'superhome' %}">Overview</a>
+  <a href="{% url 'supercommunities' %}">Communities</a>
+  <a href="{% url 'superadmins' %}">Community admins</a>
+  <a href="{% url 'supercategories' %}">Categories</a>
+  <a href="{% url 'modqueue' %}">Review queue</a>
+  <a href="{% url 'superreports' %}">Reports</a>
+  <a href="{% url 'superusers' %}">Users</a>
+  <a href="{% url 'superactivity' %}">Activity</a>
+</nav>
+  <p class="muted">Click a number to see the memories in that category.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Category</th><th>Belongs to</th><th>Description</th><th>Memories</th><th></th></tr></thead>
+    <tbody>
+    {% for c in cats %}
+      <tr><td>{{ c.catname }}</td>
+        <td>{% if c.cname %}{{ c.cname }}{% else %}<span class="badge approved">All communities</span>{% endif %}</td>
+        <td class="muted">{{ c.description }}</td>
+        <td><a href="{% url 'supercategorydetail' %}?id={{ c.catid }}"><b>{{ c.total }}</b></a></td>
+        <td style="text-align:right"><form method="post" action="{% url 'supercategoryhandler' %}" class="inline">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="catid" value="{{ c.catid }}"><button class="btn small danger" type="submit">Delete</button></form></td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No categories yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <section class="panel" style="margin-top:2rem;max-width:640px">
+    <h2>Add a platform category</h2>
+    <p class="muted">A platform category is available to every community. Community admins add their own from the community page.</p>
+    <form method="post" action="{% url 'supercategoryhandler' %}">{% csrf_token %}
+      <div class="fieldrow"><label for="catname">Name</label><input id="catname" name="catname" type="text" required></div>
+      <div class="fieldrow"><label for="description">Description</label><input id="description" name="description" type="text"></div>
+      <button class="btn" type="submit">Add category</button>
+    </form>
+  </section>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

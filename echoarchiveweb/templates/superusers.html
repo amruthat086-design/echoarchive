@@ -1,0 +1,85 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Users | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section">
+  <h1>Platform</h1>
+  <nav class="actions" style="margin:0 0 2rem;padding-bottom:1rem;border-bottom:1px solid var(--line)" aria-label="Platform">
+  <a href="{% url 'superhome' %}">Overview</a>
+  <a href="{% url 'supercommunities' %}">Communities</a>
+  <a href="{% url 'superadmins' %}">Community admins</a>
+  <a href="{% url 'supercategories' %}">Categories</a>
+  <a href="{% url 'modqueue' %}">Review queue</a>
+  <a href="{% url 'superreports' %}">Reports</a>
+  <a href="{% url 'superusers' %}">Users</a>
+  <a href="{% url 'superactivity' %}">Activity</a>
+</nav>
+  <form method="get" class="search" style="margin-top:0"><label class="sr" for="q">Search users</label><input id="q" name="q" type="search" value="{{ q }}" placeholder="Name, username or email"><button class="btn" type="submit">Search</button></form>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Roles in communities</th><th>Place</th><th>Joined</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in rows %}
+      <tr><td>{{ u.name }} <span class="muted">@{{ u.uname }}</span>{% if u.role == "superadmin" %} <span class="badge approved">Super admin</span>{% endif %}</td>
+        <td>{% if u.roles %}{{ u.roles|capfirst }}{% else %}<span class="muted">None</span>{% endif %}</td><td class="muted">{{ u.place }}</td><td class="muted">{{ u.regdate|date:"j M Y" }}</td>
+        <td>{% if u.status == "Active" %}Active{% else %}<span class="badge rejected">Blocked</span>{% endif %}</td>
+        <td style="text-align:right">{% if u.uid != myid %}<form method="post" action="{% url 'superuserhandler' %}" class="inline">{% csrf_token %}<input type="hidden" name="uid" value="{{ u.uid }}"><button class="btn small ghost" type="submit">{% if u.status == "Active" %}Block{% else %}Unblock{% endif %}</button></form>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="empty">No users match.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,122 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+
+
+  <style>
+    a{
+      text-decoration: none;
+      color: black;
+    }
+
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <h1>Memories worth keeping, kept where everyone can find them.</h1>
+    <p class="lede">Photographs, stories, recipes and records from our communities, checked by the people who know them best.</p>
+    <form class="search" action="{% url 'archive' %}" method="get" role="search">
+      <label class="sr" for="q">Search the archive</label>
+      <input id="q" name="q" type="search" placeholder="Search by title, place, tag, or words inside a scanned page">
+      <button class="btn" type="submit">Search</button>
+    </form>
+    <p class="quick">
+      Or browse the <a href="{% url 'timeline' %}">timeline</a>, the <a href="{% url 'communities' %}">communities</a>{% for c in cats %}{% if forloop.first %}, or start with {% endif %}<a href="{% url 'archive' %}?category={{ c.catid }}">{{ c.catname|lower }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+    </p>
+    {% if not me %}
+    <p class="quick">Super admins, community admins, moderators and contributors can <a href="{% url 'login' %}">log in</a>. Visitors can <a href="{% url 'register' %}">create an account</a> to ask to join a community and become a contributor.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Recently added</h2>
+    <div class="rows">
+      {% for m in recent %}<article class="row">
+  <div class="rail"><span class="year">{% if m.sortyear %}{{ m.sortyear }}{% elif m.approxdate %}{{ m.approxdate }}{% else %}Undated{% endif %}</span></div>
+  <div class="row-main">
+    <h3><a href="{% url 'memorydetail' %}?id={{ m.memid }}">{{ m.title }}</a></h3>
+    <p class="excerpt">{{ m.description|truncatechars:170 }}</p>
+    <p class="meta"><span>{{ m.cname }}</span>{% if m.catname %}<span>{{ m.catname }}</span>{% endif %}{% if m.location %}<span>{{ m.location }}</span>{% endif %}</p>
+  </div>
+  {% if m.thumb %}<a class="thumb" href="{% url 'memorydetail' %}?id={{ m.memid }}" tabindex="-1"><img src="/static/images/uploads/{{ m.thumb }}" alt="" loading="lazy"></a>{% endif %}
+</article>
+      {% empty %}<p class="empty">Nothing has been approved yet. Be the first to add a memory.</p>{% endfor %}
+    </div>
+    {% if recent %}<p><a href="{% url 'archive' %}">See all {{ total }} memories</a></p>{% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Communities</h2>
+    <div class="table-wrap">
+    <table>
+      <tbody>
+      {% for c in comms %}
+        <tr>
+          <td style="width:30%"><a href="{% url 'communitydetail' %}?id={{ c.cid }}">{{ c.cname }}</a></td>
+          <td class="muted">{{ c.description|truncatechars:110 }}</td>
+          <td class="muted" style="text-align:right;white-space:nowrap">{{ c.total }} memor{{ c.total|pluralize:"y,ies" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

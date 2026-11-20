@@ -1,0 +1,103 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archive | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section">
+  <h1>The archive</h1>
+  <form method="get" role="search">
+    <div class="fieldrow" style="max-width:640px;margin-bottom:0">
+      <label class="sr" for="q">Search</label>
+      <input id="q" name="q" type="search" value="{{ f.q }}" placeholder="Title, place, tag, or text inside a scanned page">
+    </div>
+    <div class="filters">
+      <div class="fieldrow"><label for="community">Community</label>
+        <select id="community" name="community"><option value="">All</option>
+        {% for c in comms %}<option value="{{ c.cid }}" {% if f.community == c.cid|stringformat:"s" %}selected{% endif %}>{{ c.cname }}</option>{% endfor %}</select></div>
+      <div class="fieldrow"><label for="category">Category</label>
+        <select id="category" name="category"><option value="">All</option>
+        {% for c in cats %}<option value="{{ c.catid }}" {% if f.category == c.catid|stringformat:"s" %}selected{% endif %}>{{ c.catname }}</option>{% endfor %}</select></div>
+      <div class="fieldrow"><label for="location">Place</label><input id="location" name="location" type="text" value="{{ f.location }}"></div>
+      <div class="fieldrow"><label for="from">From year</label><input id="from" name="from" type="number" value="{{ f.from }}"></div>
+      <div class="fieldrow"><label for="to">To year</label><input id="to" name="to" type="number" value="{{ f.to }}"></div>
+      <div class="fieldrow"><label for="sort">Order</label>
+        <select id="sort" name="sort"><option value="">Newest added</option><option value="year" {% if f.sort == "year" %}selected{% endif %}>Oldest year first</option></select></div>
+      <div class="actions"><button class="btn" type="submit">Apply</button><a class="btn ghost" href="{% url 'archive' %}">Clear</a></div>
+    </div>
+  </form>
+
+  <p class="muted">{{ total }} memor{{ total|pluralize:"y,ies" }} found.</p>
+  <div class="rows">
+    {% for m in rows %}<article class="row">
+  <div class="rail"><span class="year">{% if m.sortyear %}{{ m.sortyear }}{% elif m.approxdate %}{{ m.approxdate }}{% else %}Undated{% endif %}</span></div>
+  <div class="row-main">
+    <h3><a href="{% url 'memorydetail' %}?id={{ m.memid }}">{{ m.title }}</a></h3>
+    <p class="excerpt">{{ m.description|truncatechars:170 }}</p>
+    <p class="meta"><span>{{ m.cname }}</span>{% if m.catname %}<span>{{ m.catname }}</span>{% endif %}{% if m.location %}<span>{{ m.location }}</span>{% endif %}</p>
+  </div>
+  {% if m.thumb %}<a class="thumb" href="{% url 'memorydetail' %}?id={{ m.memid }}" tabindex="-1"><img src="/static/images/uploads/{{ m.thumb }}" alt="" loading="lazy"></a>{% endif %}
+</article>
+    {% empty %}<p class="empty">Nothing matches. Try fewer words, or clear the filters.</p>{% endfor %}
+  </div>
+
+  {% if pages > 1 %}
+  <nav class="pager" aria-label="Pages">
+    {% if has_prev %}<a href="?{% if keep %}{{ keep }}&amp;{% endif %}page={{ prev }}">Newer</a>{% else %}<span></span>{% endif %}
+    <span class="muted">Page {{ pg }} of {{ pages }}</span>
+    {% if has_next %}<a href="?{% if keep %}{{ keep }}&amp;{% endif %}page={{ next }}">Older</a>{% else %}<span></span>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,173 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section">
+  <p class="muted" style="margin-bottom:.4rem"><a href="{% url 'modqueue' %}">Review queue</a> / {{ mem.cname }}</p>
+  <h1>{{ mem.title }}</h1>
+  <p><span class="badge {{ mem.status|lower }}">{{ mem.status }}</span>
+     <span class="muted">Shared by {{ mem.author }}, version {{ mem.version }}</span></p>
+
+  <div class="detail">
+    <div>
+      <div class="prose"><p>{{ mem.description }}</p></div>
+      <dl class="facts" style="margin-top:1.5rem">
+        <dt>Date</dt><dd>{{ mem.approxdate|default:"Not given" }}{% if mem.sortyear %} ({{ mem.sortyear }}){% endif %}</dd>
+        <dt>Place</dt><dd>{{ mem.location|default:"Not given" }}{% if mem.district %}, {{ mem.district }}{% endif %}</dd>
+        <dt>Near</dt><dd>{{ mem.landmark|default:"Not given" }}</dd>
+        <dt>People</dt><dd>{{ mem.people|default:"Not given" }}</dd>
+        <dt>How it is known</dt><dd>{{ mem.source|default:"Not given" }}</dd>
+        <dt>Category</dt><dd>{{ mem.catname|default:"None" }}</dd>
+        <dt>Subject</dt><dd>{% if subject %}{{ subject.sname }}{% else %}Not linked to a subject yet{% endif %}</dd>
+        <dt>Tags</dt><dd>{{ mem.tags|default:"None" }}</dd>
+      </dl>
+
+      <h2>Images and documents</h2>
+      <div class="gallery">
+        {% for f in files %}
+          <figure>
+            <p style="margin:0 0 .4rem"><span class="badge">{{ f.kind }}</span> <span class="muted">{{ f.caption }}</span></p>
+            {% if f.isimage %}<a href="/static/images/uploads/{{ f.filename }}"><img src="/static/images/uploads/{{ f.filename }}" alt="Attachment {{ forloop.counter }}"></a>
+            {% else %}<p><a href="/static/images/uploads/{{ f.filename }}">{{ f.filename }}</a></p>{% endif %}
+            {% for o in f.ocr %}
+              <details class="ocr" open><summary>Text from this image ({{ o.language }}), {% if o.reviewed %}checked by the contributor{% else %}not checked{% endif %}</summary>
+              <pre>{{ o.text }}</pre></details>
+            {% endfor %}
+          </figure>
+        {% empty %}<p class="empty">No files attached. Consider asking for supporting evidence.</p>{% endfor %}
+      </div>
+    </div>
+
+    <aside>
+      {% if history %}
+        <h3>Earlier decisions</h3>
+        {% for v in history %}<p style="font-size:.92rem"><b>{{ v.decision }}</b> by {{ v.modname }}, {{ v.vdate|date:"j M" }}{% if v.reason %}<br><span class="muted">{{ v.reason }}</span>{% endif %}</p>{% endfor %}
+      {% endif %}
+    </aside>
+  </div>
+
+  {% if reviewable %}
+  <section class="panel">
+    <h2>Your decision</h2>
+    <form method="post" action="{% url 'moddecisionhandler' %}">
+      {% csrf_token %}<input type="hidden" name="memid" value="{{ mem.memid }}">
+      <div class="fieldrow radios">
+        <label><input type="radio" name="decision" value="Approved" required> Approve and add to the archive</label>
+        <label><input type="radio" name="decision" value="Rejected"> Reject</label>
+        <label><input type="radio" name="decision" value="Needs changes"> Ask the contributor for changes</label>
+        <label><input type="radio" name="decision" value="Evidence requested"> Ask for supporting evidence</label>
+      </div>
+      <div class="fieldrow"><label for="reason">Message to the contributor</label><textarea id="reason" name="reason" rows="3"></textarea>
+        <p class="help">Required unless you approve.</p></div>
+      <button class="btn" type="submit">Record decision</button>
+    </form>
+  </section>
+  {% else %}
+    <div class="notice">This memory is {{ mem.status|lower }}, so no decision is needed right now. You can still link related memories below.</div>
+  {% endif %}
+
+  <section class="panel">
+    <h2>Possible duplicates and related memories</h2>
+    {% for o in similar %}
+      <div style="padding:.8rem 0;border-top:1px solid var(--line)">
+        <p style="margin:0"><a href="{% url 'memorydetail' %}?id={{ o.memid }}">{{ o.title }}</a> <span class="muted">{{ o.score }}% similar, {{ o.status|lower }}{% if o.why %}. Why: {{ o.why }}{% endif %}</span></p>
+        <p class="muted" style="margin:.2rem 0 .6rem">{{ o.description|truncatechars:140 }}</p>
+        <form method="post" action="{% url 'modlinkhandler' %}" class="inlineform">
+          {% csrf_token %}<input type="hidden" name="memid" value="{{ mem.memid }}"><input type="hidden" name="otherid" value="{{ o.memid }}"><input type="hidden" name="score" value="{{ o.score }}"><input type="hidden" name="samesubject" value="on">
+          <select name="linktype" aria-label="How are they connected?"><option value="Duplicate">Duplicate</option><option value="Related" selected>Related account</option><option value="Conflicting">Conflicting account</option></select>
+          <input type="text" name="note" placeholder="Note, for example what differs" style="width:18rem" aria-label="Note">
+          <button class="btn small ghost" type="submit">Link</button>
+        </form>
+        {% if reviewable %}
+        <form method="post" action="{% url 'modduplicatehandler' %}" class="inline" style="display:block;margin-top:.6rem">
+          {% csrf_token %}<input type="hidden" name="memid" value="{{ mem.memid }}"><input type="hidden" name="otherid" value="{{ o.memid }}"><input type="hidden" name="score" value="{{ o.score }}">
+          <button class="btn small danger" type="submit">Reject this memory as a duplicate of this one</button>
+        </form>
+        {% endif %}
+      </div>
+    {% empty %}<p class="empty">No close matches were found in this community.</p>{% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>Link to another memory</h2>
+    <p class="muted">If two people describe the same thing differently, link them instead of deleting one. Both stay visible, with your note explaining the difference.</p>
+    <form method="post" action="{% url 'modlinkhandler' %}">
+      {% csrf_token %}<input type="hidden" name="memid" value="{{ mem.memid }}">
+      <div class="fieldrow"><label for="otherid">Other memory</label>
+        <select id="otherid" name="otherid" required><option value="">Choose a memory</option>{% for o in others %}<option value="{{ o.memid }}">{{ o.title }}</option>{% endfor %}</select></div>
+      <div class="fieldrow"><label for="linktype">How are they connected?</label>
+        <select id="linktype" name="linktype"><option value="Duplicate">Duplicate</option><option value="Related">Related account</option><option value="Conflicting">Conflicting account</option></select></div>
+      <div class="fieldrow"><label for="note">Note</label><textarea id="note" name="note" rows="2"></textarea>
+        <p class="help">For conflicting accounts, say what differs. Example: built in 1920 here, 1935 in the other.</p></div>
+      <div class="fieldrow"><label class="check"><input type="checkbox" name="samesubject" checked> <span>Both describe the same subject</span></label></div>
+      <button class="btn" type="submit">Link memories</button>
+    </form>
+  </section>
+
+  {% if links %}
+  <section class="panel">
+    <h2>Existing links</h2>
+    {% for l in links %}
+      <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;padding:.6rem 0;border-top:1px solid var(--line)">
+        <div><span class="badge">{{ l.linktype }}</span> <a href="{% url 'modreview' %}?id={{ l.othermem }}">{{ l.othertitle }}</a>
+          {% if l.note %}<p class="muted" style="margin:.2rem 0 0">{{ l.note }}</p>{% endif %}</div>
+        <form method="post" action="{% url 'modunlinkhandler' %}">{% csrf_token %}<input type="hidden" name="memid" value="{{ mem.memid }}"><input type="hidden" name="linkid" value="{{ l.linkid }}"><button class="btn small danger" type="submit">Remove link</button></form>
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

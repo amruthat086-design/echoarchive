@@ -1,0 +1,147 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ mem.title }} | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap">
+  <div class="page-head">
+    <p class="muted" style="margin-bottom:.4rem"><a href="{% url 'communitydetail' %}?id={{ mem.cid }}">{{ mem.cname }}</a></p>
+    <h1>{{ mem.title }}</h1>
+    {% if mem.status != "Approved" %}<p><span class="badge {{ mem.status|lower }}">{{ mem.status }}</span></p>{% endif %}
+  </div>
+
+  {% if mem.status != "Approved" %}
+    <div class="notice">This memory is not public yet. Only you, the community's moderators and admins can see it.</div>
+  {% endif %}
+
+  <div class="detail">
+    <div>
+      <div class="prose"><p>{{ mem.description }}</p></div>
+
+      {% if photos %}
+      <div class="gallery">
+        {% for f in photos %}
+          <figure>
+            <a href="/static/images/uploads/{{ f.filename }}"><img src="/static/images/uploads/{{ f.filename }}" alt="{{ f.caption|default:mem.title }}"></a>
+            {% if f.caption %}<figcaption class="muted">{{ f.caption }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if locphotos or mem.location %}
+      <section style="margin-top:2.5rem">
+        <h2>The place</h2>
+        <p><b>{{ mem.location|default:"Place not named" }}</b>{% if mem.district %}, {{ mem.district }}{% endif %}</p>
+        {% if mem.landmark %}<p class="muted">{{ mem.landmark }}</p>{% endif %}
+        {% if locphotos %}
+        <div class="gallery">
+          {% for f in locphotos %}
+            <figure>
+              <a href="/static/images/uploads/{{ f.filename }}"><img src="/static/images/uploads/{{ f.filename }}" alt="{{ f.caption|default:mem.location }}"></a>
+              {% if f.caption %}<figcaption class="muted">{{ f.caption }}</figcaption>{% endif %}
+            </figure>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if doc_texts %}
+      <section style="margin-top:2.5rem">
+        <h2>Written text</h2>
+        {% for t in doc_texts %}<div class="prose"><pre style="white-space:pre-wrap;font-family:inherit">{{ t }}</pre></div>{% endfor %}
+      </section>
+      {% endif %}
+
+      {% if related or same %}
+      <section style="margin-top:2.5rem">
+        <h2>Other accounts of this</h2>
+        {% for r in related %}
+          <div class="conflict">
+            <p style="margin:0"><span class="badge">{{ r.linktype }}</span> <a href="{% url 'memorydetail' %}?id={{ r.memid }}">{{ r.title }}</a></p>
+            {% if r.note %}<p class="muted" style="margin:.3rem 0 0">{{ r.note }}</p>{% endif %}
+          </div>
+        {% endfor %}
+        {% for r in same %}
+          <div class="conflict"><p style="margin:0"><span class="badge">Same subject</span> <a href="{% url 'memorydetail' %}?id={{ r.memid }}">{{ r.title }}</a></p></div>
+        {% endfor %}
+        {% if subject %}<p><a href="{% url 'subjectdetail' %}?id={{ subject.sid }}">See everything about {{ subject.sname }}</a></p>{% endif %}
+      </section>
+      {% endif %}
+    </div>
+
+    <aside>
+      <dl class="facts">
+        <dt>Date</dt><dd>{% if mem.approxdate %}{{ mem.approxdate }}{% elif mem.sortyear %}{{ mem.sortyear }}{% else %}Not known{% endif %}</dd>
+        {% if mem.location %}<dt>Place</dt><dd>{{ mem.location }}{% if mem.district %}, {{ mem.district }}{% endif %}</dd>{% endif %}
+        {% if mem.catname %}<dt>Category</dt><dd>{{ mem.catname }}</dd>{% endif %}
+        {% if mem.people %}<dt>People</dt><dd>{{ mem.people }}</dd>{% endif %}
+        {% if mem.source %}<dt>How it is known</dt><dd>{{ mem.source }}</dd>{% endif %}
+        <dt>Kind</dt><dd>{{ mem.mtype|capfirst }}</dd>
+        {% if subject %}<dt>Subject</dt><dd><a href="{% url 'subjectdetail' %}?id={{ subject.sid }}">{{ subject.sname }}</a></dd>{% endif %}
+        <dt>Shared by</dt><dd>{{ mem.author }}</dd>
+        <dt>Added</dt><dd>{{ mem.mdate|date:"j F Y" }}</dd>
+        {% if tags %}<dt>Tags</dt><dd><ul class="chips" style="margin-top:.3rem">{% for t in tags %}<li><a href="{% url 'archive' %}?q={{ t|urlencode }}">{{ t }}</a></li>{% endfor %}</ul></dd>{% endif %}
+      </dl>
+      <div class="actions" style="flex-direction:column;align-items:flex-start">
+        {% if editable %}<a class="btn small" href="{% url 'memoryedit' %}?id={{ mem.memid }}">Edit this memory</a>{% endif %}
+        {% if can_suggest %}<a href="{% url 'suggest' %}?id={{ mem.memid }}">Suggest a correction</a>{% endif %}
+        {% if can_report %}<a href="{% url 'report' %}?id={{ mem.memid }}">Report a problem</a>{% endif %}
+      </div>
+    </aside>
+  </div>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

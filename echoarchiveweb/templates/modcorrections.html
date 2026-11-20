@@ -1,0 +1,76 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Suggested corrections | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section" style="max-width:820px">
+  <p class="muted" style="margin-bottom:.4rem"><a href="{% url 'modqueue' %}">Review queue</a></p>
+  <h1>Suggested corrections</h1>
+  {% for c in items %}
+    <section class="panel">
+      <h3><a href="{% url 'memorydetail' %}?id={{ c.memid }}">{{ c.title }}</a></h3>
+      <p class="muted">Suggested by {{ c.byname }}, {{ c.cdate|date:"j M Y" }}</p>
+      <p style="white-space:pre-line">{{ c.details }}</p>
+      {% if c.proposed %}<details class="ocr"><summary>Suggested wording</summary><pre>{{ c.proposed }}</pre></details>{% endif %}
+      <form method="post" action="{% url 'modcorrectionhandler' %}" class="actions" style="margin-top:1rem">
+        {% csrf_token %}<input type="hidden" name="corrid" value="{{ c.corrid }}">
+        {% if c.proposed %}<label class="check" style="display:flex;gap:.5rem"><input type="checkbox" name="apply" value="1"> Replace the description with the suggested wording</label>{% endif %}
+        <button class="btn small" type="submit" name="decision" value="accept">Accept</button>
+        <button class="btn small danger" type="submit" name="decision" value="decline">Decline</button>
+      </form>
+    </section>
+  {% empty %}<p class="empty">No suggestions waiting. Corrections from members will appear here.</p>{% endfor %}
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>

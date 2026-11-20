@@ -1,0 +1,74 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account | EchoArchive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'index' %}">EchoArchive</a>
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'archive' %}">Archive</a>
+      <a href="{% url 'timeline' %}">Timeline</a>
+      <a href="{% url 'communities' %}">Communities</a>
+    </nav>
+    <div class="account">
+      {% if me %}
+        {% if can_add %}<a href="{% url 'memoryadd' %}" class="btn small">Add a memory</a>{% endif %}
+        <details class="menu">
+          <summary>{{ me }}{% if unread %} <span class="dot" title="Unread notifications"></span>{% endif %}</summary>
+          <div class="menu-list">
+            <a href="{% url 'dashboard' %}">{% if can_add %}My memories{% else %}My account{% endif %}</a>
+            <a href="{% url 'notifications' %}">Notifications{% if unread %} ({{ unread }}){% endif %}</a>
+            {% if is_mod %}<a href="{% url 'modqueue' %}">Review queue</a>{% endif %}
+            {% if is_cadmin %}<a href="{% url 'cadmin' %}">Manage community</a>{% endif %}
+            {% if is_super %}<a href="{% url 'superhome' %}">Platform</a>{% endif %}
+            <a href="{% url 'logout' %}">Log out</a>
+          </div>
+        </details>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a href="{% url 'register' %}" class="btn small">Create account</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="wrap messages">
+  {% for message in messages %}<p class="message {{ message.tags }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<main>
+<div class="wrap section narrow">
+  <h1 style="font-size:2rem">Create an account</h1>
+  <p class="muted">Anyone can read the public archive without an account. Create one to become a contributor: after you sign up, ask to join a community, and once its admin approves you can add your own memories.</p>
+  {% if msg %}<p class="message error">{{ msg }}</p>{% endif %}
+  <form method="post" action="{% url 'registerhandler' %}">
+    {% csrf_token %}
+    <div class="fieldrow"><label for="name">Full name</label><input id="name" name="name" type="text" value="{{ old.name }}" required></div>
+    <div class="fieldrow"><label for="uname">Username</label><input id="uname" name="uname" type="text" value="{{ old.uname }}" required></div>
+    <div class="fieldrow"><label for="email">Email</label><input id="email" name="email" type="email" value="{{ old.email }}"></div>
+    <div class="fieldrow"><label for="phone">Phone</label><input id="phone" name="phone" type="text" value="{{ old.phone }}"></div>
+    <div class="fieldrow"><label for="pas">Password</label><input id="pas" name="pas" type="password" required></div>
+    <div class="fieldrow"><label for="pas2">Confirm password</label><input id="pas2" name="pas2" type="password" required></div>
+    <div class="actions"><button class="btn" type="submit">Create account</button></div>
+  </form>
+  <p class="muted" style="margin-top:1.5rem">Already have an account? <a href="{% url 'login' %}">Log in</a>.</p>
+</div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">EchoArchive keeps community memories searchable for the people who come next.</div>
+</footer>
+</body>
+</html>
